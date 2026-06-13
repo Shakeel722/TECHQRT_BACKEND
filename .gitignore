@@ -1,0 +1,4 @@
+node_modules/
+
+# Block database passwords and secret API keys
+.env
