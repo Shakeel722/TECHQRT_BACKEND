@@ -5,6 +5,22 @@ A production-ready, open-source AI voice assistant and administrative dashboard 
 This system runs completely **local-first with 100% free and open-source tools**, eliminating cloud dependencies by executing all Natural Language Processing (NLP) and intent categorization directly inside the server loop.
 
 ---
+#Quick start
+
+# Clone your specific repository
+git clone https://github.com
+
+# Enter the project folder
+cd backend_project
+
+# Install all the NLP, database, and express backend libraries
+npm install
+
+# stay at backend folder 
+node src/server.js -->  start backend
+
+#open public/index.html and view in live server --> start frontend
+
 
 ## 🚀 Core Product Capabilities
 
