@@ -19,6 +19,25 @@ recognition.interimResults = false;
 
 let isRecording = false;
 
+// ✨ NEW: Welcome announcement sequence on initial landing page load
+function announceWelcomeGreeting() {
+    const welcomeMessage = "Hello! Welcome to your AI Voice Clinic Assistant. I can help you search for doctors and schedule clinic appointments. How can I help you today?";
+    
+    // Display the initial introductory prompt visually inside the system response card area
+    if (replyText) {
+        replyText.innerText = welcomeMessage;
+    }
+    
+    // Add a short delay to ensure browser speech assets are completely awake and initialized
+    setTimeout(() => {
+        speak(welcomeMessage);
+    }, 600);
+}
+
+// Attach the layout trigger hook to execute right when the browser window finishes rendering elements
+window.addEventListener('load', announceWelcomeGreeting);
+
+
 // 📋 ✨ NEW: Dashboard Data Fetcher & Renderer
 async function loadAppointmentsDashboard() {
     if (!appointmentTableBody) return; // Prevent errors if the element isn't in HTML yet

@@ -1,73 +1,89 @@
-import natural from 'natural';
-import nlpCompromise from 'compromise';
+ import natural from 'natural';
 import * as chrono from 'chrono-node';
 
 const classifier = new natural.LogisticRegressionClassifier();
 
-// Train Intent Classifier
-const trainingData = [
-  { text: 'find me a cardiologist in delhi', label: 'find_doctor' },
-  { text: 'look up top rated dermatologists', label: 'find_doctor' },
-  { text: 'are there any orthopedists available in mumbai', label: 'find_doctor' },
-  { text: 'i need an appointment with Dr. Amit tomorrow at 4pm', label: 'book_appointment' },
-  { text: 'book Dr Priya for next monday at 10 am', label: 'book_appointment' },
-  { text: 'schedule a booking with Dr. Rohan', label: 'book_appointment' },
-  { text: 'cancel my booking for tomorrow', label: 'cancel_appointment' },
-  { text: 'remove my appointment with doctor amit', label: 'cancel_appointment' }
+// Initialize foundational fallback intent matrix cluster
+const baselineIntents = [
+  { text: 'hi hello good morning assistant receptionist greet welcome', label: 'greeting' },
+  { text: 'thank you so much thanks bye talk to you later appreciate ok', label: 'goodbye' },
+  { text: 'find look search doctor specialist clinic consult appointment check book', label: 'find_doctor' }
 ];
-
-trainingData.forEach(item => classifier.addDocument(item.text, item.label));
+baselineIntents.forEach(item => classifier.addDocument(item.text, item.label));
 classifier.train();
 
-export function parseIntentAndEntities(text) {
+// Intelligent Semantic Mapping Rules (Maps descriptive terms to core base names)
+const METABOLIC_MAP = {
+  'chest pain': 'cardiologist', 'heart attack': 'cardiologist', 'palpitations': 'cardiologist',
+  'skin rash': 'dermatologist', 'acne': 'dermatologist', 'pimple': 'dermatologist',
+  'child': 'pediatrician', 'baby': 'pediatrician', 'kid': 'pediatrician', 'infant': 'pediatrician',
+  'bone': 'orthopedist', 'joint': 'orthopedist', 'fracture': 'orthopedist', 'broken': 'orthopedist',
+  'headache': 'general physician', 'fever': 'general physician', 'stomachache': 'general physician', 'cold': 'general physician',
+  'toothache': 'dentist', 'cavity': 'dentist', 'teeth': 'dentist', 'gum': 'dentist'
+};
+
+export function parseIntentAndEntities(text, systemEntities = { cities: [], specializations: [], doctors: [] }) {
   const cleanText = text.toLowerCase().trim();
-  
-  // 1. Intent Detection
+  console.log(`\n🗣️ Spoken Sentence: "${text}"`);
+
+  // 1. Core Action Mapping
   const intent = classifier.classify(cleanText);
 
-  // 2. Entity Extraction via compromise
-  const doc = nlpCompromise(cleanText);
-  
-  // Extract Cities
-  const cities = ['delhi', 'mumbai', 'bangalore', 'chennai', 'kolkata' , 'lucknow', 'hyderabad', 'pune', 'jaipur', 'ahmedabad'  ];
+  // 2. Dynamic City Entity Picker
   let city = null;
-  cities.forEach(c => { if (cleanText.includes(c)) city = c; });
+  systemEntities.cities.forEach(c => {
+    if (cleanText.includes(c.toLowerCase())) city = c.toLowerCase();
+  });
 
-  // Extract Specializations
-  const specializations = ['cardiologist', 'dermatologist', 'pediatrician', 'orthopedist', 'neurologist'];
-  let specialization = null;
-  specializations.forEach(s => { if (cleanText.includes(s)) specialization = s; });
-
-  // Extract Doctor Names
-  let doctorName = null;
-  const nameMatch = cleanText.match(/dr\s*\.?\s*([a-z]+)/i);
-  if (nameMatch) {
-    doctorName = `Dr. ${nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1)}`;
+  // Regular expression backup for unnamed localities ("in [city]")
+  if (!city) {
+    const cityMatch = cleanText.match(/in\s+([a-z]+)/i);
+    if (cityMatch && cityMatch[1]) {
+      const parsedWord = cityMatch[1].toLowerCase();
+      if (!['the', 'a', 'my', 'this'].includes(parsedWord)) city = parsedWord;
+    }
   }
 
-  // 3. Date & Time Parsing via chrono-node
+  // 3. Dynamic Specialization Extraction
+  let specialization = null;
+  
+  // Try mapping common symptoms first
+  Object.keys(METABOLIC_MAP).forEach(symptom => {
+    if (cleanText.includes(symptom)) {
+      specialization = METABOLIC_MAP[symptom];
+    }
+  });
+
+  // Direct confirmation match against active database specializations
+  systemEntities.specializations.forEach(spec => {
+    if (cleanText.includes(spec.toLowerCase())) specialization = spec.toLowerCase();
+  });
+
+  // 4. Dynamic Doctor Selection Processing
+  let doctorName = null;
+  systemEntities.doctors.forEach(doc => {
+    const cleanDocName = doc.toLowerCase().replace('dr.', '').trim();
+    if (cleanText.includes(cleanDocName) && cleanDocName.length > 2) {
+      doctorName = doc; // Matches database format precisely
+    }
+  });
+
+  // 5. Structural Date & Time Parsing via Chrono
   const dateResults = chrono.parse(cleanText);
   let appointmentDate = null;
   let appointmentTime = null;
 
   if (dateResults && dateResults.length > 0) {
-    const parsedDate = dateResults[0].start.date();
+    const parsedDate = dateResults.start.date();
     appointmentDate = parsedDate.toISOString().split('T')[0];
     
-    // Check if a specific time context was parsed
-    if (dateResults[0].start.isCertain('hour')) {
+    if (dateResults.start.isCertain('hour')) {
       appointmentTime = parsedDate.toTimeString().split(' ')[0].substring(0, 5);
     }
   }
 
   return {
     intent,
-    entities: {
-      specialization,
-      city,
-      doctorName,
-      appointmentDate,
-      appointmentTime
-    }
+    entities: { specialization, city, doctorName, appointmentDate, appointmentTime }
   };
 }
