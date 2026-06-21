@@ -1,85 +1,168 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Voice Medical Assistant & Dashboard</title>
+    <title>AI Clinic Receptionist</title>
     <style>
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f4f8; margin: 0; padding: 40px; display: flex; flex-direction: column; align-items: center; gap: 30px; }
-        .card { background: white; max-width: 700px; width: 100%; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); padding: 30px; text-align: center; }
-        h1 { color: #1e293b; margin-bottom: 8px; }
-        h2 { color: #1e293b; margin-top: 0; text-align: left; font-size: 20px; display: flex; justify-content: space-between; align-items: center; }
-        p { color: #64748b; margin-top: 0; }
-        .btn-mic { width: 80px; height: 80px; border-radius: 50%; border: none; background: #3b82f6; color: white; font-size: 32px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 14px rgba(59,130,246,0.4); margin: 15px 0; }
-        .btn-mic.recording { background: #ef4444; box-shadow: 0 0 25px #ef4444; transform: scale(1.05); }
-        .status { font-weight: 600; color: #334155; min-height: 24px; margin: 10px 0; }
-        .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; min-height: 40px; text-align: left; margin: 15px 0; }
-        .box h3 { margin: 0 0 8px 0; font-size: 13px; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.5px; }
-        .response-text { color: #0f172a; font-size: 15px; font-weight: 500; }
-        
-        /* Dashboard Styling */
-        .dashboard-card { background: white; max-width: 900px; width: 100%; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); padding: 30px; }
-        .btn-refresh { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; transition: background 0.2s; }
-        .btn-refresh:hover { background: #059669; }
-        .table-container { overflow-x: auto; margin-top: 15px; }
-        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
-        th { background: #f1f5f9; color: #475569; padding: 12px; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 12px; border-bottom: 1px solid #edf2f7; color: #334155; }
-        tr:hover { background: #f8fafc; }
-        .badge { background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block; text-transform: capitalize; }
-        .empty-state { text-align: center; color: #94a3b8; padding: 30px; font-style: italic; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 400px;
+        }
+        .mic-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            outline: none;
+            box-shadow: 0 4px 6px rgba(0,123,255,0.3);
+        }
+        .mic-btn.listening {
+            background: #dc3545;
+            box-shadow: 0 0 0 15px rgba(220, 53, 69, 0.3);
+            animation: pulse 1.5s infinite;
+        }
+        .status {
+            margin: 20px 0;
+            font-weight: bold;
+            color: #555;
+        }
+        .transcript-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: 6px;
+            min-height: 60px;
+            text-align: left;
+            font-size: 14px;
+            color: #333;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
 
-<!-- Voice Input Interface panel component -->
-<div class="card">
-    <h1>Voice Clinic Assistant</h1>
-    <p>Press the button and say something like: "I want a cardiologist in Delhi"</p>
+<div class="container">
+    <h2>Virtual Medical Receptionist</h2>
+    <p>Click the mic and start booking your appointment</p>
     
-    <button id="micBtn" class="btn-mic">🎙️</button>
-    <div id="statusText" class="status">Click to speak</div>
-
-    <div class="box">
-        <h3>What you said:</h3>
-        <div id="transcriptText" class="response-text">—</div>
-    </div>
-
-    <div class="box">
-        <h3>System Response:</h3>
-        <div id="replyText" class="response-text">—</div>
+    <button id="micBtn" class="mic-btn">🎙️</button>
+    <div id="status" class="status">Click to speak</div>
+    
+    <div class="transcript-box">
+        <strong>You said:</strong> <span id="userTranscript">...</span><br><br>
+        <strong>Assistant:</strong> <span id="botReply">...</span>
     </div>
 </div>
 
-<!-- ✨ NEW: Dashboard Grid layout representation element -->
-<div class="dashboard-card">
-    <h2>
-        <span>📋 Appointment Dashboard</span>
-        <button id="refreshBtn" class="btn-refresh">🔄 Refresh Board</button>
-    </h2>
-    <div class="table-container">
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Patient Name</th>
-                    <th>Doctor Name</th>
-                    <th>Specialization</th>
-                    <th>City</th>
-                    <th>Date</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="appointmentTableBody">
-                <tr>
-                    <td colspan="8" class="empty-state">Loading appointments...</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+<script>
+    // Check for Browser Web Speech Support
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        alert("Your browser does not support Web Speech API. Please use Google Chrome.");
+    }
 
-<script src="app.js"></script>
+    const recognition = new SpeechRecognition();
+    const micBtn = document.getElementById('micBtn');
+    const statusText = document.getElementById('status');
+    const userTranscriptDisplay = document.getElementById('userTranscript');
+    const botReplyDisplay = document.getElementById('botReply');
+
+    let isListening = false;
+
+    recognition.continuous = false;
+    recognition.lang = 'en-IN'; // Sets region (e.g., en-US, en-IN)
+    recognition.interimResults = false;
+
+    // Toggle Microphone state
+    micBtn.addEventListener('click', () => {
+        if (!isListening) {
+            recognition.start();
+        } else {
+            recognition.stop();
+        }
+    });
+
+    recognition.onstart = () => {
+        isListening = true;
+        micBtn.classList.add('listening');
+        statusText.innerText = "Listening...";
+    };
+
+    recognition.onend = () => {
+        isListening = false;
+        micBtn.classList.remove('listening');
+        statusText.innerText = "Processing reply...";
+    };
+
+    recognition.onresult = async (event) => {
+        const transcript = event.results[0][0].transcript;
+        userTranscriptDisplay.innerText = transcript;
+        
+        // Send transcript to your Node.js backend
+        try {
+            const response = await fetch('/api/voice/process', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text: transcript })
+            });
+            
+            const data = await response.json();
+            
+            if (data.reply) {
+                botReplyDisplay.innerText = data.reply;
+                statusText.innerText = "Click to speak again";
+                speak(data.reply); // Read response aloud
+            } else {
+                botReplyDisplay.innerText = "Error processing your request.";
+            }
+        } catch (err) {
+            console.error("Backend communication error:", err);
+            statusText.innerText = "Error reaching server.";
+        }
+    };
+
+    // Text-to-Speech Engine Function
+    function speak(text) {
+        // Cancel any active speaking frames
+        window.speechSynthesis.cancel();
+        
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0; // Speed control
+        utterance.pitch = 1.0; // Pitch control
+        
+        // Select a natural-sounding voice if available
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(voice => voice.name.includes("Google") || voice.name.includes("Natural"));
+        if (preferredVoice) utterance.voice = preferredVoice;
+
+        window.speechSynthesis.speak(utterance);
+    }
+</script>
+
 </body>
 </html>

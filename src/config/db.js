@@ -1,25 +1,47 @@
-import dotenv from 'dotenv';
-// Force dotenv to load before anything else
-dotenv.config(); 
+ import dotenv from 'dotenv';
+  dotenv.config();
+
+// PostgreSQL database configuration
+
+// import pg from 'pg';
+
+// const { Pool } = pg;
+
+// const pool = new Pool({
+//   connectionString: process.env.DATABASE_URL,
+//   ssl: {
+//     rejectUnauthorized: false,
+//   },
+// });
+
+// pool.on('connect', () => {
+//   console.log('📌 Connected to Neon PostgreSQL database.');
+// });
+
+// export default pool;
+
+
+
+// local PostgreSQL database configuration
+
 
 import pg from 'pg';
+const { Pool } = pg;
 
-// Verification log to see what Node is reading
-if (!process.env.DB_PASSWORD) {
-  console.error("⚠️ Warning: DB_PASSWORD is not being read from the .env file!");
-}
-
-const pool = new pg.Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'medical_booking',
-  // The String() wrapper prevents the SASL crash if the variable is blank
-  password: String(process.env.DB_PASSWORD || ''), 
-  port: parseInt(process.env.DB_PORT || '5432'),
+const pool = new Pool({
+    user: process.env.DB_USER || 'postgres',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'appointment_db',
+    password: process.env.DB_PASSWORD, 
+    port: process.env.DB_PORT || 5432,
 });
 
-pool.on('connect', () => {
-  console.log('📌 Connected to PostgreSQL database cluster.');
-});
+pool.connect()
+    .then(() => {
+        console.log('PostgreSQL Connected Successfully');
+    })
+    .catch((err) => {
+        console.error('Database Connection Error:', err);
+    });
 
 export default pool;
